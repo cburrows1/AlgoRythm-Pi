@@ -202,12 +202,12 @@ def main():
         for event in pygame.event.get():
             if event.type == GET_SONG:
                 # Check for new song info
-                if t is not None and t.is_alive():
-                    t.join(0)
+                #if t is not None and t.is_alive():
+                #    t.join(0)
 
                 last_song_title = txt_title
                 t = threading.Thread(target=get_song_info)
-                t.start()
+                #t.start()
             elif event.type == GET_COVER:
                 if t2 is not None and t2.is_alive():
                     t2.join(0)
