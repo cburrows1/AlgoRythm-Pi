@@ -106,6 +106,8 @@ def main():
     # it looks like the low end consistently has higher intensity than the high end
     # Scale has been replaced by settings.multiplier
     
+    spr = backend.Sampler(44100)
+    spr.start()
 
     scope = pyscope()
     size = settings.size = scope.size
@@ -163,7 +165,6 @@ def main():
         cover_img = None
     
     # Connect to backend and create bars
-    backend.start_stream(settings)
     settings.b_height = size[1] - info_height if settings.b_height == 0 else settings.b_height
     bars = build_bars(settings, size[0])
 
@@ -268,7 +269,6 @@ def main():
                 bar.update_properties(settings)
             if temp_chunk != (settings.b_count, settings.b_gap, settings.layout):
                 # If chunk was changed, restart stream and rebuld bars
-                backend.restart_stream(settings)
                 bars = build_bars(settings, size[0])
             if size != settings.size:
                 size = settings.size
@@ -322,8 +322,7 @@ def main():
 
         pygame.display.flip()
         clock.tick(60)
-        
-    backend.stop_stream()
+    
     pygame.quit()
 
 if __name__ == "__main__":
