@@ -15,7 +15,6 @@ import win32gui
 
 import algorythm.backend as backend
 from algorythm.settings import Settings, rgb_to_hex, hex_to_rgb
-from algorythm.menu import draw_menu 
 from algorythm.bars import AudioBar, DualBar, InvertedBar, RadialBar
 
 
@@ -146,16 +145,8 @@ def main():
     t = threading.Thread(target=get_song_info)
     t.start()
 
-    # Load song info while menu runs
-    # Draw main menu
-    selection = draw_menu(screen, clock, size)
-    if selection == 1:
-        displaySettings = True
-    elif selection == 3:
-        pygame.quit()
-        exit()
-    else:
-        displaySettings = False
+
+    displaySettings = False
 
     size = settings.size = screen.get_size()
 
