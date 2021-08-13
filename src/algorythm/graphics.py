@@ -107,9 +107,9 @@ def main():
     # Scale has been replaced by settings.multiplier
     
 
-    scope = pyscope
+    scope = pyscope()
     size = settings.size = scope.size
-    screen = pyscope.screen
+    screen = scope.screen
     pygame.display.set_caption("AlgoRythm")
     clock = pygame.time.Clock()
        
