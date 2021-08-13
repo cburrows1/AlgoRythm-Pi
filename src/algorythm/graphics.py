@@ -12,7 +12,7 @@ import threading
 import algorythm.backend as backend
 from algorythm.settings import Settings, rgb_to_hex, hex_to_rgb
 from algorythm.bars import AudioBar, DualBar, InvertedBar, RadialBar
-
+from algorythm.piScreen import pyscope
 
 def build_bars(settings, width):
     bars = []
@@ -42,6 +42,9 @@ def build_bars(settings, width):
 def get_song_info():
     global txt_title, txt_artist, cover_obj
     txt_title, txt_artist =  media.collect_title_artist()
+
+def start_server():
+    media.start_track_id_server()
 
 def get_cover_obj():
     global cover_obj, song_cover, cover_changed, default_cover
@@ -102,19 +105,14 @@ def main():
     #scale factor = maybe a non constant scale factor could be better
     # it looks like the low end consistently has higher intensity than the high end
     # Scale has been replaced by settings.multiplier
-    size = settings.size
+    
 
-    screen = pygame.display.set_mode(size, RESIZABLE)
+    scope = pyscope
+    size = settings.size = scope.size
+    screen = pyscope.screen
     pygame.display.set_caption("AlgoRythm")
     clock = pygame.time.Clock()
        
-
-    # Win32 Layered window (From https://stackoverflow.com/questions/550001/fully-transparent-windows-in-pygame)
-    hwnd = pygame.display.get_wm_info()["window"]
-    win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE,
-                        win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE) | win32con.WS_EX_LAYERED)
-    # Set window transparency color
-    win32gui.SetLayeredWindowAttributes(hwnd, win32api.RGB(*INVIS), 0, win32con.LWA_COLORKEY)
 
     # Font for user hints
     font_hint = pygame.font.SysFont(None, 24)
@@ -138,7 +136,7 @@ def main():
 
 
     # Create thread for getting song info
-    t = threading.Thread(target=get_song_info)
+    t = threading.Thread(target=start_server)
     t.start()
 
 

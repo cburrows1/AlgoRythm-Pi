@@ -7,34 +7,24 @@ import binascii
 import numpy as np
 from scipy import cluster
 import algorythm.spotipy_implementation as sp
+import zmq
 
-
-async def winrtapi():
-    import winrt
-    # Song info    
-    from winrt.windows.media.control import \
-        CurrentSessionChangedEventArgs, GlobalSystemMediaTransportControlsSessionManager as MediaManager
-
-    sessions = await MediaManager.request_async()
-
-    curr_session = sessions.get_current_session()
-    if curr_session:
-        return await curr_session.try_get_media_properties_async()
-    else:
-        return None
+track_id = None
 
 def collect_title_artist():
-    info = asyncio.run(winrtapi())
+    global track_id
+    sp.search_for_track(track_id)
 
-    if info is not None:
-        info_dict = {song_attr: info.__getattribute__(song_attr) for song_attr in dir(info) if song_attr[0] != '_'}
+def collect_title_artist():
+    global track_id
+    context = zmq.Context()
+    socket = context.socket(zmq.REP)
+    socket.bind("tcp://*:5555")
 
-        info_dict['genres'] = list(info_dict['genres'])
-
-        title_artist = [info_dict['title'], info_dict['artist']]
-        return title_artist
-    else:
-        return ["N/A", "N/A"]
+    while True:
+        track_id = str(socket.recv())
+        print("Received request: %s" % track_id)
+        socket.send(b"")
 
 def get_background_img(img_url):
     buffer = tempfile.SpooledTemporaryFile(max_size=1e9)
@@ -66,15 +56,12 @@ def generate_colors_from_img(img, num_colors):
     return colors
 
 def generate_colors(count=0):
-    curr_media_info = collect_title_artist()
+    global track_id
 
     err = {'time_per_beat':1, 'colors':None, 'album_art':None}
-    # Check if no currently playing track was found
-    if curr_media_info == ["N/A", "N/A"] or '' in curr_media_info:
+    if track_id == None:
         return err
-
     try:
-        track_id = sp.search_for_id(*curr_media_info)
         track_img_url = sp.get_album_art(track_id)
         pil_img = get_background_img(track_img_url)
         features = sp.get_audio_features(track_id)
