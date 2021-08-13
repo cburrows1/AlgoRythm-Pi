@@ -1,8 +1,10 @@
-from multiprocessing import Process,Queue,Pipe
-from algorythm.libre_spot_events import f
+import zmq
 
-if __name__ == '__main__':
-    parent_conn,child_conn = Pipe()
-    p = Process(target=f, args=(child_conn,))
-    p.start()
-    print(parent_conn.recv())
+context = zmq.Context()
+socket = context.socket(zmq.REP)
+socket.bind("tcp://*:5555")
+
+while True:
+    message = str(socket.recv())
+    print("Received request: %s" % message)
+    socket.send(b"")

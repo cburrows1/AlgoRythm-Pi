@@ -1,9 +1,12 @@
-#!/usr/bin/env python3
-from multiprocessing import Process,Pipe
+import zmq
 import os
 
-def f(child_conn):
-    if(os.environ['PLAYER_EVENT'] == 'playing'):
-        msg = str(os.environ['TRACK_ID'])
-        child_conn.send(msg)
-        child_conn.close()
+if(os.environ['PLAYER_EVENT'] == 'playing'):
+    msg = str(os.environ['TRACK_ID'])
+    context = zmq.Context()
+
+    socket = context.socket(zmq.REQ)
+    socket.connect("tcp://localhost:5555")
+
+    socket.send(bytes(msg,'utf-8'))
+    message = socket.recv()

@@ -8,10 +8,6 @@ import algorythm.collect_media_info as media
 import pygame
 import threading
 
-#pywin32
-import win32api 
-import win32con
-import win32gui
 
 import algorythm.backend as backend
 from algorythm.settings import Settings, rgb_to_hex, hex_to_rgb
