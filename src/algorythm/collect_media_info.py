@@ -15,7 +15,7 @@ def collect_title_artist():
     global track_id
     sp.search_for_track(track_id)
 
-def collect_title_artist():
+def start_track_id_server():
     global track_id
     context = zmq.Context()
     socket = context.socket(zmq.REP)
