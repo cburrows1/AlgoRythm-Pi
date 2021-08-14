@@ -7,7 +7,7 @@ import algorythm.collect_media_info as media
 
 import pygame
 import threading
-
+import queue
 
 import algorythm.backend as backend
 from algorythm.settings import Settings, rgb_to_hex, hex_to_rgb
@@ -39,16 +39,18 @@ def build_bars(settings, width):
                 bars.append(AudioBar(settings, i))
     return bars
 
-def get_song_info():
+def get_song_info(track_id):
     global txt_title, txt_artist, cover_obj
-    txt_title, txt_artist =  media.collect_title_artist()
+    #if not q.empty():
+    txt_title, txt_artist =  media.collect_title_artist(track_id)
 
 def start_server():
-    media.start_track_id_server()
+    media.async_server()
 
-def get_cover_obj():
+def get_cover_obj(track_id):
     global cover_obj, song_cover, cover_changed, default_cover
-    cover_obj = media.generate_colors()
+    print('t_id' + str(track_id))
+    cover_obj = media.generate_colors(track_id)
     pil_img = cover_obj['album_art']
     if pil_img is not None:
         try:
@@ -93,6 +95,7 @@ cover_obj = None
 song_cover = None
 cover_changed = False
 default_cover = None
+q = queue.Queue()
 
 def main():
     global song_cover, cover_obj, cover_changed, txt_title, txt_artist, size, default_cover
@@ -106,7 +109,7 @@ def main():
     # it looks like the low end consistently has higher intensity than the high end
     # Scale has been replaced by settings.multiplier
     
-    spr = backend.Sampler(44100)
+    spr = backend.Sampler(settings,44100)
     spr.start()
 
     scope = pyscope()
@@ -138,36 +141,31 @@ def main():
 
 
     # Create thread for getting song info
-    t = threading.Thread(target=start_server)
+    #start_server()
+    t = threading.Thread(target=media.async_server,name=media.async_server,args=(q,))
     t.start()
-
 
     displaySettings = False
 
     size = settings.size = screen.get_size()
-
-    t.join()
     
 
     # Render default text images
     artist_img, title_img = get_song_imgs(settings, song_fonts)
     info_height = artist_img.get_height() + title_img.get_height()
-
     # Create Default Cover
     default_cover = get_default_cover(font_artist, info_height)
 
     # Get cover obj and set song cover (default if err)
-    get_cover_obj()
-
+    get_cover_obj(q.get())
     if song_cover is not None:
         cover_img = pygame.transform.smoothscale(song_cover, (info_height,info_height))
     else:
         cover_img = None
-    
     # Connect to backend and create bars
     settings.b_height = size[1] - info_height if settings.b_height == 0 else settings.b_height
+    spr.get_levels()
     bars = build_bars(settings, size[0])
-
     # Create custom event for retrieving song info
     GET_SONG = pygame.event.custom_type()
     SONG_EVENT = pygame.event.Event(GET_SONG)
@@ -187,8 +185,10 @@ def main():
     color_index = 0
     t = None
     t2 = None
-    display_hints = True
-
+    t3 = None
+    t4 = None
+    display_hints = False
+    pygame.mouse.set_visible(False)
     while run:
         # Track ticks for smoothing
         tick_count = pygame.time.get_ticks()
@@ -205,10 +205,18 @@ def main():
                 # Check for new song info
                 #if t is not None and t.is_alive():
                 #    t.join(0)
+                track_id = None
+                if not q.empty():
+                    track_id = q.get()
+                    t4 = threading.Thread(target=get_cover_obj,args=(track_id,))
+                    t4.start()
+                    last_song_title = txt_title
+                    if t3 is not None and t3.is_alive():
+                        t3.join(0)
 
-                last_song_title = txt_title
-                t = threading.Thread(target=get_song_info)
-                #t.start()
+                    last_song_title = txt_title
+                    t3 = threading.Thread(target=get_song_info,args=(track_id,))
+                    t3.start()
             elif event.type == GET_COVER:
                 if t2 is not None and t2.is_alive():
                     t2.join(0)
@@ -239,7 +247,7 @@ def main():
                 bars = build_bars(settings, size[0])
                 settings.save('algorythm_settings')
 
-            
+        
         if last_song_title != txt_title:
             # Check to see if the song changed, if so, re-render the text
             artist_img, title_img = get_song_imgs(settings, song_fonts)
@@ -275,7 +283,7 @@ def main():
                 settings.b_height = size[1] - info_height
                 bars = build_bars(settings, size[0])
             settings.save("algorythm_settings")
-             
+        spr.get_levels()     
         #update bars based on levels and multiplier - have to adjust if fewer bars are used
         if settings.dyn_color and cover_obj['colors'] is not None and len(cover_obj['colors']) > 1:
             song_colors = cover_obj['colors'][:-1] + cover_obj['colors'][::-1]

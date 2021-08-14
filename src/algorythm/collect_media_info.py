@@ -11,20 +11,31 @@ import zmq
 
 track_id = None
 
-def collect_title_artist():
-    global track_id
-    sp.search_for_track(track_id)
+def collect_title_artist(track_id):
+    return sp.search_for_track(track_id)
 
-def start_track_id_server():
-    global track_id
+def async_server(q):
     context = zmq.Context()
     socket = context.socket(zmq.REP)
     socket.bind("tcp://*:5555")
 
     while True:
-        track_id = str(socket.recv())
+        track_id = socket.recv().decode("utf-8")
         print("Received request: %s" % track_id)
+        q.put(track_id)
         socket.send(b"")
+
+
+def start_track_id_server():
+    loop = asyncio.get_event_loop()
+    try:
+        asyncio.ensure_future(async_server())
+        loop.run_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        print("Closing Loop")
+        loop.close()
 
 def get_background_img(img_url):
     buffer = tempfile.SpooledTemporaryFile(max_size=1e9)
@@ -55,9 +66,7 @@ def generate_colors_from_img(img, num_colors):
     colors = [binascii.hexlify(bytearray(int(c) for c in codes[i])).decode('ascii') for i in max_indeces]
     return colors
 
-def generate_colors(count=0):
-    global track_id
-
+def generate_colors(track_id,count=0):
     err = {'time_per_beat':1, 'colors':None, 'album_art':None}
     if track_id == None:
         return err

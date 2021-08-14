@@ -14,7 +14,7 @@ track_name = 'PIN PIN'
 
 def search_for_track(track_id):
     search = sp.track(track_id)
-    return [search['track']['title'],search['track']['artist']]
+    return [search['name'],search['artists'][0]['name']]
 
 def search_for_id(track_name, artist):
     search = sp.search(q="track:{} artist:{}".format(track_name, artist), limit=1, offset=0, type='track')
